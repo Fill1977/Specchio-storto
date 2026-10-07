@@ -1,7 +1,7 @@
 /* Specchio Storto — service worker
    Alza il numero di CACHE a ogni modifica del sito, così il telefono
    scarica la versione nuova invece di riusare quella vecchia. */
-const CACHE = 'specchio-v3';
+const CACHE = 'specchio-v4';
 
 const CORE = [
   './',
@@ -15,6 +15,7 @@ const CORE = [
   './js/audio.js',
   './js/store.js',
   './js/native.js',
+  './js/vendor/capacitor.js',
   './fonts/bungee-latin-400-normal.woff2',
   './fonts/archivo-latin-400-normal.woff2',
   './fonts/archivo-latin-600-normal.woff2',

@@ -4,8 +4,15 @@
 const Cap = window.Capacitor;
 export const isNative = !!(Cap && Cap.isNativePlatform && Cap.isNativePlatform());
 
-const Filesystem = isNative ? Cap.registerPlugin('Filesystem') : null;
-const Share = isNative ? Cap.registerPlugin('Share') : null;
+/* I plugin si creano solo quando servono: un problema qui non deve mai
+   bloccare l'avvio dell'app. Se manca registerPlugin si parla col ponte nativo. */
+function plugin(name){
+  if(typeof Cap.registerPlugin === 'function') return Cap.registerPlugin(name);
+  return new Proxy({}, { get: (_, method) => opts => Cap.nativePromise(name, method, opts) });
+}
+let fs = null, sh = null;
+const Filesystem = () => fs || (fs = plugin('Filesystem'));
+const Share = () => sh || (sh = plugin('Share'));
 
 function toBase64(blob){
   return new Promise((res, rej) => {
@@ -40,9 +47,9 @@ function download(blob, name){
 export async function shareBlob(blob, name, text){
   if(isNative){
     const data = await toBase64(blob);
-    const w = await Filesystem.writeFile({ path: name, data, directory: 'CACHE' });
+    const w = await Filesystem().writeFile({ path: name, data, directory: 'CACHE' });
     try{
-      await Share.share({ title: 'Specchio Storto', text, files: [w.uri], dialogTitle: 'Specchio Storto' });
+      await Share().share({ title: 'Specchio Storto', text, files: [w.uri], dialogTitle: 'Specchio Storto' });
       return 'shared';
     }catch(e){
       return /cancel/i.test(e && e.message || '') ? 'cancelled' : Promise.reject(e);
@@ -65,7 +72,7 @@ export async function shareBlob(blob, name, text){
 export async function saveBlob(blob, name){
   if(isNative){
     const data = await toBase64(blob);
-    await Filesystem.writeFile({
+    await Filesystem().writeFile({
       path: 'SpecchioStorto/' + name, data, directory: 'DOCUMENTS', recursive: true
     });
     return 'Documents/SpecchioStorto';

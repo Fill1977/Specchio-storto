@@ -1,7 +1,7 @@
 // Copia i file del sito in www/, la cartella che Capacitor impacchetta nell'APK.
 import { cpSync, rmSync, mkdirSync } from 'node:fs';
 
-const FILES = ['index.html', 'privacy.html', 'manifest.json',
+const FILES = ['index.html', 'privacy.html', 'manifest.json', 'sw.js',
   'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'];
 const DIRS = ['css', 'js', 'fonts'];
 

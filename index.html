@@ -4,370 +4,84 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#140A1E">
+<meta name="description" content="Sedici specchi deformanti dentro la fotocamera: foto, video con voce storta, giostra, rivelazione e cabina fototessera. Tutto resta nel telefono.">
 <title>Specchio Storto</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Specchio">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --ink:#140A1E;
-    --plum:#2E1338;
-    --neon:#FF2D8A;
-    --acid:#FFD84D;
-    --cyan:#35E0E8;
-    --bone:#F7EFE3;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%;overflow:hidden;background:var(--ink);color:var(--bone);
-    font-family:'Archivo',system-ui,sans-serif;overscroll-behavior:none}
-  #stage{position:fixed;inset:0}
-  canvas{display:block;width:100%;height:100%;background:var(--ink)}
-
-  /* ---- schermata iniziale ---- */
-  #gate{position:fixed;inset:0;display:grid;place-content:center;gap:28px;
-    text-align:center;padding:32px;
-    background:radial-gradient(120% 90% at 50% 0%, var(--plum) 0%, var(--ink) 70%);z-index:20}
-  .sign{font-family:'Bungee',sans-serif;line-height:.92;letter-spacing:.01em}
-  .sign span{display:block}
-  .sign .a{font-size:clamp(38px,13vw,72px);color:var(--acid);animation:warpA 3.6s ease-in-out infinite}
-  .sign .b{font-size:clamp(38px,13vw,72px);color:var(--neon);animation:warpB 3.6s ease-in-out infinite}
-  @keyframes warpA{0%,100%{transform:scaleX(1) skewX(0deg)}35%{transform:scaleX(1.18) skewX(-6deg)}70%{transform:scaleX(.86) skewX(3deg)}}
-  @keyframes warpB{0%,100%{transform:scaleX(1) skewX(0deg)}35%{transform:scaleX(.84) skewX(5deg)}70%{transform:scaleX(1.2) skewX(-4deg)}}
-  .kicker{font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--cyan);font-weight:600}
-  .note{font-size:14px;line-height:1.55;color:#B9A9C4;max-width:34ch;margin:0 auto}
-  .note b{color:var(--bone);font-weight:600}
-  #enter{font-family:'Bungee',sans-serif;font-size:17px;padding:18px 30px;border:0;cursor:pointer;
-    background:var(--neon);color:var(--ink);border-radius:2px;
-    box-shadow:0 0 0 3px var(--ink), 0 0 0 6px var(--neon), 0 12px 40px rgba(255,45,138,.4)}
-  #enter:active{transform:translateY(2px)}
-  #enter:focus-visible{outline:3px solid var(--acid);outline-offset:8px}
-
-  /* ---- controlli ---- */
-  #hud{position:fixed;inset:auto 0 0 0;z-index:10;display:none;
-    padding:0 0 max(14px,env(safe-area-inset-bottom));
-    background:linear-gradient(to top, rgba(20,10,30,.94) 45%, rgba(20,10,30,0))}
-  #hud.on{display:block}
-
-  #strip{display:flex;gap:8px;overflow-x:auto;padding:14px 14px 10px;scrollbar-width:none}
-  #strip::-webkit-scrollbar{display:none}
-  .tick{flex:0 0 auto;position:relative;border:0;cursor:pointer;
-    font-family:'Bungee',sans-serif;font-size:12px;letter-spacing:.02em;
-    padding:11px 15px;border-radius:3px;background:rgba(247,239,227,.1);color:var(--bone);
-    backdrop-filter:blur(6px)}
-  /* bordo dentellato: il biglietto del luna park */
-  .tick::before,.tick::after{content:"";position:absolute;top:0;bottom:0;width:4px;
-    background-image:radial-gradient(circle at 0 4px, transparent 2.5px, currentColor 2.6px);
-    background-size:4px 8px;opacity:0}
-  .tick::before{left:0}
-  .tick::after{right:0;transform:scaleX(-1)}
-  .tick[aria-pressed="true"]{background:var(--acid);color:var(--ink)}
-  .tick[aria-pressed="true"]::before,.tick[aria-pressed="true"]::after{opacity:.85}
-  .tick:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
-
-  #row{display:flex;align-items:center;gap:14px;padding:4px 18px 6px}
-  #amount{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;
-    background:linear-gradient(90deg,var(--cyan),var(--neon));outline:none}
-  #amount::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
-    background:var(--bone);border:3px solid var(--ink);box-shadow:0 0 0 2px var(--bone)}
-  #amount::-moz-range-thumb{width:26px;height:26px;border-radius:50%;
-    background:var(--bone);border:3px solid var(--ink)}
-  #amount:focus-visible{box-shadow:0 0 0 3px var(--acid)}
-
-  .glyph{width:46px;height:46px;flex:0 0 auto;border-radius:50%;border:1.5px solid rgba(247,239,227,.35);
-    background:transparent;color:var(--bone);cursor:pointer;font-size:19px;display:grid;place-content:center}
-  .glyph:active{background:rgba(247,239,227,.15)}
-  .glyph:focus-visible{outline:2px solid var(--acid);outline-offset:2px}
-  #shot{width:64px;height:64px;border-radius:50%;border:4px solid var(--bone);background:var(--neon);
-    flex:0 0 auto;cursor:pointer}
-  #shot:active{transform:scale(.92)}
-  #shot:focus-visible{outline:3px solid var(--acid);outline-offset:4px}
-
-  #flash{position:fixed;inset:0;background:var(--bone);opacity:0;pointer-events:none;z-index:15}
-  #flash.pop{animation:pop .32s ease-out}
-  @keyframes pop{from{opacity:.85}to{opacity:0}}
-
-  #err{position:fixed;left:16px;right:16px;bottom:calc(150px + env(safe-area-inset-bottom));z-index:30;
-    display:none;padding:14px 16px;border-left:3px solid var(--neon);
-    background:rgba(46,19,56,.97);font-size:13.5px;line-height:1.5}
-  #err.on{display:block}
-
-  @media (prefers-reduced-motion:reduce){
-    .sign .a,.sign .b{animation:none}
-    #flash.pop{animation-duration:.01s}
-  }
-</style>
+<link rel="preload" href="fonts/bungee-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <div id="stage"><canvas id="c"></canvas></div>
-
+<div id="reticle"></div>
+<div id="banner" aria-live="polite"></div>
+<div id="count" aria-hidden="true"></div>
+<div id="recInfo"><i></i><span id="recTime">0:00</span></div>
+<div id="hint" role="status"></div>
+<div id="flash"></div>
 <div id="err" role="alert"></div>
 
+<div id="top">
+  <button class="glyph" id="albumBtn" data-i18n-label="album">🖼️</button>
+  <div class="spacer"></div>
+  <button class="glyph" id="colorBtn" data-i18n-label="colorBtn">🎨<span class="lbl" id="colorLbl"></span></button>
+  <button class="glyph" id="voiceBtn" data-i18n-label="voiceBtn">🎤<span class="lbl" id="voiceLbl"></span></button>
+  <button class="glyph" id="flip" data-i18n-label="flip">⟲</button>
+</div>
+
 <div id="hud">
-  <div id="strip" role="group" aria-label="Effetti"></div>
+  <div id="strip" role="group" data-i18n-label="effects"></div>
   <div id="row">
-    <button class="glyph" id="flip" aria-label="Cambia fotocamera">⟲</button>
-    <input id="amount" type="range" min="0" max="100" value="60" aria-label="Intensità effetto">
-    <button id="shot" aria-label="Scatta foto"></button>
+    <span class="ico" aria-hidden="true">◦</span>
+    <input id="amount" type="range" min="0" max="100" value="60" data-i18n-label="amount">
+    <span class="ico" aria-hidden="true">◉</span>
+  </div>
+  <div id="modes" role="group">
+    <button class="mode" data-mode="foto" aria-pressed="true"></button>
+    <button class="mode" data-mode="giostra" aria-pressed="false"></button>
+    <button class="mode" data-mode="rivela" aria-pressed="false"></button>
+    <button class="mode" data-mode="cabina" aria-pressed="false"></button>
+  </div>
+  <div id="shootRow">
+    <button class="glyph" id="diceBtn" aria-label="?">🎲</button>
+    <button id="shot" data-mode="foto" data-i18n-label="shot">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><circle id="ring" cx="50" cy="50" r="47" pathLength="100" stroke-dasharray="0 100"/></svg>
+    </button>
+    <span style="width:44px"></span>
   </div>
 </div>
 
-<div id="flash"></div>
-
-<div id="gate">
-  <p class="kicker">Sala degli specchi</p>
-  <h1 class="sign"><span class="a">Specchio</span><span class="b">Storto</span></h1>
-  <p class="note">Otto specchi deformanti dentro la fotocamera. Tutto resta nel telefono: <b>niente account, niente server, niente registrazioni.</b></p>
-  <button id="enter">Accendi la fotocamera</button>
+<div id="sheet" class="panel" role="dialog" aria-modal="true">
+  <div id="sheetMedia"></div>
+  <div class="actions">
+    <button class="btn primary" id="shareBtn"></button>
+    <button class="btn" id="saveBtn"></button>
+    <button class="btn ghost" id="delBtn"></button>
+    <button class="btn ghost" id="closeBtn"></button>
+  </div>
 </div>
 
-<script>
-/* ============ shader ============ */
-const VERT = `
-attribute vec2 aPos;
-varying vec2 vUv;
-void main(){
-  vUv = aPos * 0.5 + 0.5;
-  gl_Position = vec4(aPos, 0.0, 1.0);
-}`;
+<div id="albumPanel" class="panel" role="dialog" aria-modal="true">
+  <header><h2 data-i18n="album"></h2><button class="glyph" id="albumClose" aria-label="×">✕</button></header>
+  <div id="grid"></div>
+</div>
 
-const FRAG = `
-precision highp float;
-varying vec2 vUv;
-uniform sampler2D uTex;
-uniform vec2  uCover;      // correzione riempimento schermo
-uniform float uAspect;     // proporzione del canvas
-uniform float uTime;
-uniform float uK;          // intensità 0..1
-uniform int   uMode;
-uniform float uMirror;
+<div id="gate">
+  <p class="kicker" data-i18n="kicker"></p>
+  <h1 class="sign"><span class="a">Specchio</span><span class="b">Storto</span></h1>
+  <p class="note" data-i18n-html="note"></p>
+  <button class="cta" id="enter" data-i18n="enter"></button>
+  <button id="daily"><small data-i18n="daily"></small><strong id="dailyName"></strong></button>
+  <div class="stats"><span id="streak"></span><span id="found"></span></div>
+  <p class="legal"><a href="privacy.html" data-i18n="privacy"></a> · v1.0</p>
+</div>
 
-vec2 warp(vec2 p, float k){
-  float r = length(p);
-  float a = atan(p.y, p.x);
-
-  if(uMode == 0){                       // BOMBATO — lente da pesce
-    float R = 0.8;
-    if(r > 0.0005 && r < R){
-      float nr = pow(r / R, 1.0 + k * 1.8) * R;
-      p = p / r * nr;
-    }
-  } else if(uMode == 1){                // RISUCCHIO — pinch
-    float R = 0.9;
-    if(r > 0.0005 && r < R){
-      float nr = pow(r / R, 1.0 / (1.0 + k * 1.6)) * R;
-      p = p / r * nr;
-    }
-  } else if(uMode == 2){                // VORTICE
-    float t = 1.0 - clamp(r / 0.75, 0.0, 1.0);
-    a += k * 4.0 * t * t;
-    p = vec2(cos(a), sin(a)) * r;
-  } else if(uMode == 3){                // ONDE
-    p.x += sin(p.y * 26.0 + uTime * 2.2) * 0.05 * k;
-    p.y += cos(p.x * 22.0 + uTime * 1.7) * 0.05 * k;
-  } else if(uMode == 4){                // FISARMONICA — alto/basso che respira
-    float w = sin(uTime * 1.1);
-    p.y *= mix(1.0, 0.45 + w * 0.25, k);
-    p.x *= mix(1.0, 1.55 - w * 0.3, k);
-  } else if(uMode == 5){                // GEMELLO — specchio verticale
-    p.x = mix(p.x, abs(p.x) * sign(sin(uTime * 0.4) + 0.001), k);
-  } else if(uMode == 6){                // MOSAICO
-    float n = mix(160.0, 9.0, k);
-    p = floor(p * n) / n;
-  } else if(uMode == 7){                // SCOSSA — glitch a fasce
-    float band = floor(p.y * 14.0);
-    float j = fract(sin(band * 91.7 + floor(uTime * 9.0) * 13.3) * 43758.5453);
-    p.x += (j - 0.5) * 0.22 * k * step(0.55, j);
-  }
-  return p;
-}
-
-vec2 toTex(vec2 p){
-  vec2 uv = p + 0.5;
-  uv = (uv - 0.5) * uCover + 0.5;
-  if(uMirror > 0.5) uv.x = 1.0 - uv.x;
-  return uv;
-}
-
-void main(){
-  vec2 p = vUv - 0.5;
-  p.x *= uAspect;
-  p = warp(p, uK);
-  p.x /= uAspect;
-
-  vec3 col;
-  if(uMode == 7){                       // separazione RGB sulla scossa
-    float s = 0.012 * uK;
-    col.r = texture2D(uTex, toTex(p + vec2( s, 0.0))).r;
-    col.g = texture2D(uTex, toTex(p)).g;
-    col.b = texture2D(uTex, toTex(p - vec2( s, 0.0))).b;
-  } else {
-    col = texture2D(uTex, toTex(p)).rgb;
-  }
-  gl_FragColor = vec4(col, 1.0);
-}`;
-
-/* ============ effetti ============ */
-const MODES = [
-  'Bombato', 'Risucchio', 'Vortice', 'Onde',
-  'Fisarmonica', 'Gemello', 'Mosaico', 'Scossa'
-];
-
-/* ============ setup ============ */
-const cv = document.getElementById('c');
-const gl = cv.getContext('webgl', { preserveDrawingBuffer: true, alpha: false });
-const video = document.createElement('video');
-video.playsInline = true; video.muted = true; video.autoplay = true;
-
-let mode = 0, front = true, stream = null, tex = null, U = {};
-const t0 = performance.now();
-
-function fail(msg){
-  const e = document.getElementById('err');
-  e.textContent = msg; e.classList.add('on');
-}
-
-function build(){
-  if(!gl){ fail('WebGL non è disponibile su questo browser. Prova con Chrome o Safari aggiornati.'); return false; }
-  const mk = (type, src) => {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, src); gl.compileShader(s);
-    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
-    return s;
-  };
-  const prog = gl.createProgram();
-  gl.attachShader(prog, mk(gl.VERTEX_SHADER, VERT));
-  gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, FRAG));
-  gl.linkProgram(prog);
-  gl.useProgram(prog);
-
-  const buf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
-  const loc = gl.getAttribLocation(prog, 'aPos');
-  gl.enableVertexAttribArray(loc);
-  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-
-  ['uTex','uCover','uAspect','uTime','uK','uMode','uMirror'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
-
-  tex = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);   // il video parte dall'alto, la texture dal basso
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  return true;
-}
-
-function resize(){
-  const d = Math.min(window.devicePixelRatio || 1, 2);
-  cv.width  = Math.round(cv.clientWidth  * d);
-  cv.height = Math.round(cv.clientHeight * d);
-  gl.viewport(0, 0, cv.width, cv.height);
-}
-window.addEventListener('resize', () => { if(gl) resize(); });
-
-async function open(){
-  try{
-    if(!navigator.mediaDevices?.getUserMedia) throw new Error('insecure');
-    if(stream) stream.getTracks().forEach(t => t.stop());
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: front ? 'user' : 'environment',
-               width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false
-    });
-    video.srcObject = stream;
-    await video.play();
-    document.getElementById('err').classList.remove('on');
-  }catch(err){
-    if(location.protocol !== 'https:' && location.hostname !== 'localhost'){
-      fail('La fotocamera funziona solo su HTTPS. Apri la pagina da un indirizzo https:// (o da localhost).');
-    } else if(err.name === 'NotAllowedError'){
-      fail('Permesso negato. Riattiva la fotocamera dalle impostazioni del sito e ricarica.');
-    } else {
-      fail('Fotocamera non raggiungibile: ' + (err.message || err.name));
-    }
-    throw err;
-  }
-}
-
-function draw(){
-  requestAnimationFrame(draw);
-  if(video.readyState < 2 || !video.videoWidth) return;
-
-  gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
-
-  const ca = cv.width / cv.height;
-  const va = video.videoWidth / video.videoHeight;
-  const cover = ca > va ? [1, va / ca] : [ca / va, 1];
-
-  gl.uniform1i(U.uTex, 0);
-  gl.uniform2f(U.uCover, cover[0], cover[1]);
-  gl.uniform1f(U.uAspect, ca);
-  gl.uniform1f(U.uTime, (performance.now() - t0) / 1000);
-  gl.uniform1f(U.uK, document.getElementById('amount').value / 100);
-  gl.uniform1i(U.uMode, mode);
-  gl.uniform1f(U.uMirror, front ? 1 : 0);
-
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-}
-
-/* ============ interfaccia ============ */
-const strip = document.getElementById('strip');
-MODES.forEach((name, i) => {
-  const b = document.createElement('button');
-  b.className = 'tick'; b.textContent = name;
-  b.setAttribute('aria-pressed', i === 0);
-  b.onclick = () => {
-    mode = i;
-    [...strip.children].forEach((el, j) => el.setAttribute('aria-pressed', i === j));
-    b.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  };
-  strip.appendChild(b);
-});
-
-document.getElementById('flip').onclick = () => { front = !front; open().catch(()=>{}); };
-
-document.getElementById('shot').onclick = () => {
-  document.getElementById('flash').classList.remove('pop');
-  void document.getElementById('flash').offsetWidth;
-  document.getElementById('flash').classList.add('pop');
-  cv.toBlob(b => {
-    if(!b) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(b);
-    a.download = 'specchio-storto-' + Date.now() + '.png';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  }, 'image/png');
-};
-
-document.getElementById('enter').onclick = async () => {
-  if(!build()) return;
-  resize();
-  try{
-    await open();
-    document.getElementById('gate').style.display = 'none';
-    document.getElementById('hud').classList.add('on');
-    resize();
-    draw();
-  }catch(e){ /* messaggio già mostrato */ }
-};
-
-/* ============ installazione e uso offline ============ */
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
-</script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

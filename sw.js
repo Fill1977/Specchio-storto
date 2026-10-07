@@ -1,12 +1,24 @@
 /* Specchio Storto — service worker
    Alza il numero di CACHE a ogni modifica del sito, così il telefono
    scarica la versione nuova invece di riusare quella vecchia. */
-const CACHE = 'specchio-v2';
+const CACHE = 'specchio-v3';
 
 const CORE = [
   './',
   './index.html',
+  './privacy.html',
   './manifest.json',
+  './css/style.css',
+  './js/app.js',
+  './js/shaders.js',
+  './js/i18n.js',
+  './js/audio.js',
+  './js/store.js',
+  './js/native.js',
+  './fonts/bungee-latin-400-normal.woff2',
+  './fonts/archivo-latin-400-normal.woff2',
+  './fonts/archivo-latin-600-normal.woff2',
+  './fonts/archivo-latin-800-normal.woff2',
   './icon-192.png',
   './icon-512.png',
   './icon-maskable-512.png'
@@ -30,24 +42,9 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET') return;
+  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
 
-  const url = new URL(req.url);
-  const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
-
-  // Font: la prima volta li scarico e li tengo, poi servo sempre dalla cache.
-  if (isFont) {
-    e.respondWith(
-      caches.match(req).then(hit => hit || fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
-        return res;
-      }).catch(() => hit))
-    );
-    return;
-  }
-
-  // Pagina e risorse proprie: prima la rete (per prendere gli aggiornamenti),
+  // Prima la rete (per prendere gli aggiornamenti),
   // cache come rete di salvataggio quando il telefono è offline.
   e.respondWith(
     fetch(req)

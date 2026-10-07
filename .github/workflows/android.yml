@@ -1,0 +1,94 @@
+name: APK Android
+
+on:
+  push:
+    branches: [main, 'claude/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      STORE_KEY: ${{ secrets.SS_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Dipendenze
+        run: npm ci
+
+      - name: Copia il sito dentro il progetto Android
+        run: npm run build && npx cap sync android
+
+      - name: Chiave dello store (solo se configurata nei segreti)
+        if: env.STORE_KEY != ''
+        env:
+          KS_PASS: ${{ secrets.SS_KEYSTORE_PASSWORD }}
+          K_ALIAS: ${{ secrets.SS_KEY_ALIAS }}
+          K_PASS: ${{ secrets.SS_KEY_PASSWORD }}
+        run: |
+          echo "$STORE_KEY" | base64 -d > "$RUNNER_TEMP/store.keystore"
+          {
+            echo "SS_KEYSTORE_PATH=$RUNNER_TEMP/store.keystore"
+            echo "SS_KEYSTORE_PASSWORD=$KS_PASS"
+            echo "SS_KEY_ALIAS=$K_ALIAS"
+            echo "SS_KEY_PASSWORD=$K_PASS"
+          } >> "$GITHUB_ENV"
+
+      - name: Compila l'APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Compila il bundle per il Play Store
+        if: env.STORE_KEY != ''
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Rinomina
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk "out/SpecchioStorto-1.0.${BUILD_NUMBER}.apk"
+          if [ -f android/app/build/outputs/bundle/release/app-release.aab ]; then
+            cp android/app/build/outputs/bundle/release/app-release.aab "out/SpecchioStorto-1.0.${BUILD_NUMBER}.aab"
+          fi
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SpecchioStorto-1.0.${{ github.run_number }}
+          path: out/*
+
+      - name: Pubblica l'APK da scaricare col telefono
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-1.0.${{ github.run_number }}
+          name: Specchio Storto 1.0.${{ github.run_number }} (anteprima)
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          body: |
+            APK di prova da installare direttamente sul telefono Android.
+            Apri questa pagina dal telefono, tocca il file `.apk` e conferma l'installazione
+            (la prima volta Android chiede di permettere le installazioni dal browser).
+            Commit: ${{ github.sha }}
+          files: out/*.apk

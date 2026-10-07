@@ -1,0 +1,10 @@
+{
+  "appId": "it.specchiostorto.app",
+  "appName": "Specchio Storto",
+  "webDir": "www",
+  "backgroundColor": "#140A1E",
+  "android": {
+    "backgroundColor": "#140A1E",
+    "allowMixedContent": false
+  }
+}
